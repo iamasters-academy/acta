@@ -116,12 +116,14 @@ export function SettingsPage() {
           <div className="mb-2 mt-0.5 text-[12px] text-ink-4">Nombres, marcas y términos que deben salir bien escritos.</div>
           <Textarea rows={2} defaultValue={s.vocabulary} onBlur={(e) => void save({ vocabulary: e.target.value })} placeholder="Nombre de una empresa, un producto, una sigla" />
         </div>
-        <Row label="Micrófono">
-          <Select value={s.micDeviceUID || ''} onChange={(e) => void save({ micDeviceUID: e.target.value })}>
-            <option value="">El del sistema</option>
-            {devices.map((d) => <option key={d.uid} value={d.uid}>{d.name}</option>)}
-          </Select>
-        </Row>
+        {state?.platform !== 'win32' && (
+          <Row label="Micrófono">
+            <Select value={s.micDeviceUID || ''} onChange={(e) => void save({ micDeviceUID: e.target.value })}>
+              <option value="">El del sistema</option>
+              {devices.map((d) => <option key={d.uid} value={d.uid}>{d.name}</option>)}
+            </Select>
+          </Row>
+        )}
         <Row label="Cancelación de eco" hint="Actívala si usas altavoces. Con auriculares no hace falta."><Toggle checked={s.echoCancellation} onChange={(v) => void save({ echoCancellation: v })} /></Row>
         <Row label="Guardar el audio" hint="Granola no guarda audio. Si lo activas, Acta guarda un .m4a de cada reunión."><Toggle checked={s.saveAudio} onChange={(v) => void save({ saveAudio: v })} /></Row>
       </Card>
@@ -178,9 +180,11 @@ export function SettingsPage() {
           <Input placeholder="https://outlook.office365.com/owa/calendar/…/calendar.ics" value={newCal.url} onChange={(e) => setNewCal({ ...newCal, url: e.target.value })} />
           <Button variant="primary" onClick={() => void addCalendar()}><Plus size={14} />Añadir</Button>
         </div>
-        <Row label="Calendario del Mac" hint="Lee los calendarios de la app Calendario (incluye cuentas de Google añadidas al Mac). Pide permiso la primera vez.">
-          <Toggle checked={s.macCalendarEnabled} onChange={async (v) => { if (v) await api.post('/api/helper/request', { what: 'calendar' }).catch(() => {}); await save({ macCalendarEnabled: v }); void load(); }} />
-        </Row>
+        {state?.platform === 'darwin' && (
+          <Row label="Calendario del Mac" hint="Lee los calendarios de la app Calendario (incluye cuentas de Google añadidas al Mac). Pide permiso la primera vez.">
+            <Toggle checked={s.macCalendarEnabled} onChange={async (v) => { if (v) await api.post('/api/helper/request', { what: 'calendar' }).catch(() => {}); await save({ macCalendarEnabled: v }); void load(); }} />
+          </Row>
+        )}
         <Row label="Avisarme antes de empezar" hint="Notificación para abrir las notas de la reunión.">
           <Select value={String(s.calendarNotifyMinutes)} onChange={(e) => void save({ calendarNotifyMinutes: Number(e.target.value) })}>
             <option value="-1">No avisar</option><option value="0">Al empezar</option><option value="1">1 minuto antes</option><option value="5">5 minutos antes</option>
@@ -188,7 +192,7 @@ export function SettingsPage() {
         </Row>
       </Card>
 
-      <Card id="deteccion" title="Detección de reuniones" desc="Acta detecta llamadas de Zoom, Meet, Teams, Slack, FaceTime, Webex o Discord y te propone tomar notas.">
+      <Card id="deteccion" title="Detección de reuniones" desc={state?.platform === 'win32' ? 'Acta detecta llamadas de Zoom, Meet, Teams, Slack o Webex y te propone tomar notas.' : 'Acta detecta llamadas de Zoom, Meet, Teams, Slack, FaceTime, Webex o Discord y te propone tomar notas.'}>
         <Row label="Detectar reuniones automáticamente"><Toggle checked={s.autoDetect} onChange={(v) => void save({ autoDetect: v })} /></Row>
         <Row label="Parar cuando termine la llamada"><Toggle checked={s.autoStopOnMeetingEnd} onChange={(v) => void save({ autoStopOnMeetingEnd: v })} /></Row>
         <Row label="Parar tras minutos sin voz">
@@ -198,8 +202,14 @@ export function SettingsPage() {
         </Row>
       </Card>
 
-      <Card id="permisos" title="Permisos de macOS" desc="El micrófono capta tu voz; «Grabación de pantalla» solo se usa para obtener el audio del sistema, nunca la imagen.">
-        {!perm?.available ? (
+      <Card id="permisos" title={state?.platform === 'win32' ? 'Permisos de Windows' : 'Permisos de macOS'} desc={state?.platform === 'win32' ? 'El micrófono capta tu voz. El audio de la llamada sale del sistema; Acta no graba la imagen.' : 'El micrófono capta tu voz; «Grabación de pantalla» solo se usa para obtener el audio del sistema, nunca la imagen.'}>
+        {state?.platform === 'win32' ? (
+          <div className="px-5 py-4 text-[13px] text-ink-3">
+            La primera vez que grabas, Windows pide el micrófono. El audio de las otras personas usa el loopback del sistema (Windows 10 versión 2004 o más nueva, o Windows 11). No hace falta el permiso de grabar la pantalla.
+          </div>
+        ) : state?.platform && state.platform !== 'darwin' ? (
+          <div className="px-5 py-4 text-[13px] text-ink-3">Los permisos del sistema se piden al empezar a grabar.</div>
+        ) : !perm?.available ? (
           <div className="px-5 py-4 text-[13px] text-ink-3">
             {s.packaged
               ? 'Esta copia no incluye el capturador de audio del Mac.'

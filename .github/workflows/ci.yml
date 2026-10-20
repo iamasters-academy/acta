@@ -17,4 +17,4 @@ jobs:
       - run: npm run typecheck
       - run: npm run build:payload
       - run: npm run smoke
-      - run: bash -n scripts/package-mac.sh && bash -n scripts/brand-mac-app.sh && bash -n native/build.sh
+      - run: bash -n scripts/package-mac.sh && bash -n scripts/brand-mac-app.sh && bash -n native/build.sh && node --check scripts/package-win.mjs && node --check scripts/build-win-helper.mjs

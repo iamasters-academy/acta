@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, connectEvents, onEvent, type AppState, type Folder, type MeetingSummary, type CalEvent } from './api';
 import { toast } from './components/ui';
 import { notify } from './lib/notify';
-import { startBrowserCapture, stopBrowserCapture } from './lib/browserCapture';
+import { startBrowserCapture, startWindowsCapture, stopBrowserCapture } from './lib/browserCapture';
 
 type Live = { meetingId: string; status: 'recording' | 'paused'; me: number; them: number; elapsedMs: number; speaking: { me: boolean; them: boolean } } | null;
 
@@ -64,9 +64,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const startRecording = useCallback(async (meetingId: string) => {
     const s = state || (await api.get<AppState>('/api/state'));
     const useHelper = s.helper.available && s.platform === 'darwin';
+    const useWinAudio = !!window.acta?.isDesktop && s.platform === 'win32';
     const r = await api.post<{ sources: string[] }>(`/api/meetings/${meetingId}/record`, { action: 'start', sources: useHelper ? ['helper'] : ['browser'] });
     setLive({ meetingId, status: 'recording', me: 0, them: 0, elapsedMs: 0, speaking: { me: false, them: false } });
-    if (!r.sources.length) {
+    if (useWinAudio) {
+      try {
+        const settings = await api.get<{ echoCancellation?: boolean }>('/api/settings');
+        const cap = await startWindowsCapture({ echoCancellation: settings.echoCancellation !== false });
+        browserCapture.current = true;
+        if (!cap.system) toast('Grabando el micrófono. Windows no entregó el audio de la llamada (hace falta Windows 10 versión 2004 o más nueva).', { tone: 'error' });
+      } catch (e: any) {
+        toast(`No se pudo acceder al micrófono: ${e.message}`, { tone: 'error' });
+      }
+    } else if (!r.sources.length) {
       try {
         await startBrowserCapture();
         browserCapture.current = true;

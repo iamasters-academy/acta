@@ -92,14 +92,42 @@ El identificador del bundle es `app.acta.meetings`. Se puede cambiar con `ACTA_B
 
 En GitHub Actions, el workflow `.github/workflows/macos-dmg.yml` ejecuta el mismo script. Si existen los secretos `CSC_LINK` (el .p12 en base64) y `CSC_KEY_PASSWORD`, importa el certificado en el runner antes de firmar. La notarización usa `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` y `APPLE_TEAM_ID`.
 
+## Instalador de Windows
+
+La app de Windows usa el mismo servidor y la misma interfaz. El audio no pasa por el binario Swift: el micrófono lo pide Chromium y el audio de la llamada es el loopback WASAPI que Electron ya trae (`desktopCapturer` + `audio: 'loopback'`). No hay que instalar nada más en el PC de quien usa Acta. Hace falta Windows 10 versión 2004 o más nueva, o Windows 11, en 64 bits.
+
+La detección de reuniones (Zoom, Meet, Teams, Slack, Webex) es un programa pequeño, `acta-audio.exe`, que solo mira títulos de ventana y si el micrófono está en uso. No graba audio.
+
+En un PC con Windows (hace falta Visual Studio con las herramientas de C++ de escritorio):
+
+```bash
+npm install
+npm run package:win
+```
+
+En Linux o en un Mac hace falta el compilador cruzado `x86_64-w64-mingw32-g++` (en Debian/Ubuntu, `g++-mingw-w64-x86-64`). En Linux, además, Wine de 32 bits: electron-builder ejecuta el instalador NSIS, que es un stub de 32 bits, para extraer el desinstalador (`wine` y `wine32:i386`). En un Mac, electron-builder trae su propio Wine. El mismo comando genera el instalador:
+
+```bash
+npm install
+npm run package:win
+```
+
+Salida: `dist/win/Acta-<versión>-x64-Setup.exe`.
+
+Las variables de Google son las mismas que en macOS, y este script tampoco lee `.env.local`. Sin ellas, «Conectar con Google» no aparece. Los datos quedan en `%APPDATA%\Acta`. El puerto de la app empaquetada sigue siendo 47331.
+
+Sin certificado, SmartScreen avisa. El texto para quien instala está en [INSTALAR.md](INSTALAR.md). Para firmar con Authenticode, exporta `CSC_LINK` (el .pfx en base64) y `CSC_KEY_PASSWORD` antes de `npm run package:win`.
+
+El workflow `.github/workflows/windows-setup.yml` hace lo mismo en `windows-latest`.
+
 ## Qué hace
 
 | Función | Cómo |
 |---|---|
 | Sin bot en la llamada | `bin/acta-audio` (Swift) graba el micrófono con AVAudioEngine y el audio del sistema con ScreenCaptureKit. |
 | Transcripción | Groq Whisper por defecto, OpenAI, Deepgram o whisper.cpp local. |
-| Detecta reuniones | El capturador vigila el micrófono y ventanas de Zoom, Meet, Teams, Slack, FaceTime, Webex y Discord. |
-| Calendario | Google OAuth si la build lo incluye; si no, URL iCal o el Calendario del Mac. |
+| Detecta reuniones | En el Mac, el capturador Swift. En Windows, `acta-audio.exe` (ventanas y micrófono en uso). |
+| Calendario | Google OAuth si la build lo incluye; si no, URL iCal. En el Mac, también el Calendario. |
 | Notas, plantillas, chat, tareas | En local. La IA solo entra cuando hay una clave en Ajustes. |
 | Escritorio | Ventana, icono en la barra de menús, notificaciones, `⌘⇧N`. |
 
@@ -109,9 +137,11 @@ Atajos: `⌘K` buscar · `⌘N` nueva nota · `⌘J` preguntar.
 
 - `server/` — API Express, WebSocket y `node:sqlite` + FTS5. En desarrollo, `node server/index.ts`. En la app, `scripts/build-payload.mjs` lo empaqueta con esbuild a JavaScript.
 - `native/main.swift` — capturador, detector, permisos y eventos de calendario. Solo se compila en macOS.
+- `native/win/acta-audio.cpp` — detector de reuniones para Windows. El audio lo captura Electron.
 - `web/` — React 19, Tailwind 4 y TipTap.
 - `electron/` — ventana y barra de menús. En la app empaquetada arranca el servidor con `ELECTRON_RUN_AS_NODE=1`.
 - `scripts/package-mac.sh` — DMG y zip universales (arm64 + x64).
+- `scripts/package-win.mjs` — instalador NSIS de 64 bits.
 
 ## Comprobar sin un Mac
 
@@ -129,4 +159,4 @@ npm run smoke
 - La cancelación de eco de Apple a veces no arranca (error -10875). Con auriculares no hay eco; si no, Acta compara el texto de los dos canales.
 - Los permisos de micrófono, grabación de pantalla y calendario los pide macOS la primera vez. La grabación de pantalla solo se usa para el audio del sistema.
 - No hay app de iPhone ni carpetas compartidas: Acta es de una sola persona.
-- Windows no está hecho. El plan está en [docs/WINDOWS-PLAN.md](docs/WINDOWS-PLAN.md).
+- En Windows el audio del sistema depende del loopback de Chromium. No está probado aquí contra Zoom, Teams ni Meet; el criterio y lo que quedaría por hacer si falla están en [docs/WINDOWS-PLAN.md](docs/WINDOWS-PLAN.md).

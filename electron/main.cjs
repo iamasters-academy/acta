@@ -1,7 +1,7 @@
 // Acta desktop shell. In a packaged app the server runs inside Electron's own Node
 // (ELECTRON_RUN_AS_NODE), so a clean Mac does not need a system Node install.
 // Development still launches the TypeScript server with the system Node.
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, shell, globalShortcut, nativeImage, session, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, shell, globalShortcut, nativeImage, session, dialog, nativeTheme, desktopCapturer } = require('electron');
 const { spawn, execFileSync } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -18,6 +18,10 @@ function resourcesRoot() {
 }
 
 function findNode() {
+  if (process.platform === 'win32') {
+    const candidates = [process.env.ACTA_NODE, 'node.exe', 'node'];
+    return candidates.find((c) => c && (c === 'node' || c === 'node.exe' || fs.existsSync(c))) || 'node';
+  }
   const candidates = [process.env.ACTA_NODE, '/usr/local/bin/node', '/opt/homebrew/bin/node'];
   try { candidates.push(execFileSync('/bin/zsh', ['-lc', 'command -v node'], { encoding: 'utf8' }).trim()); } catch { /* no login shell */ }
   return candidates.find((c) => c && fs.existsSync(c));
@@ -102,14 +106,14 @@ async function ensureServer() {
 }
 
 function createWindow() {
+  const mac = process.platform === 'darwin';
   win = new BrowserWindow({
     width: 1320,
     height: 860,
     minWidth: 920,
     minHeight: 600,
     title: 'Acta',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 18, y: 17 },
+    ...(mac ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 18, y: 17 } } : { autoHideMenuBar: true }),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1d1d1c' : '#fcfcf8',
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true },
@@ -151,9 +155,11 @@ async function newNote(record) {
 }
 
 function trayIcon(active) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><path d="M8 29 16.6 7h2.8L28 29h-4.2l-2-5.4h-7.6l-2 5.4Zm7.4-9h5.2L18 12.8Z" fill="#000"/>${active ? '<circle cx="30" cy="7" r="5" fill="#000"/>' : ''}</svg>`;
+  const mac = process.platform === 'darwin';
+  const fill = mac ? '#000' : '#1d1d1c';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><path d="M8 29 16.6 7h2.8L28 29h-4.2l-2-5.4h-7.6l-2 5.4Zm7.4-9h5.2L18 12.8Z" fill="${fill}"/>${active ? `<circle cx="30" cy="7" r="5" fill="${fill}"/>` : ''}</svg>`;
   const img = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`).resize({ width: 18, height: 18 });
-  img.setTemplateImage(true);
+  if (mac) img.setTemplateImage(true);
   return img;
 }
 
@@ -205,10 +211,11 @@ app.whenReady().then(async () => {
   createWindow();
   tray = new Tray(trayIcon(false));
   refreshTray();
+  if (process.platform === 'win32') tray.on('click', () => show());
   watchEvents();
   globalShortcut.register('CommandOrControl+Shift+N', () => void newNote(true));
   const appMenu = Menu.buildFromTemplate([
-    { role: 'appMenu' },
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
     { label: 'Archivo', submenu: [
       { label: 'Nueva nota', accelerator: 'CommandOrControl+N', click: () => win?.webContents.executeJavaScript("window.dispatchEvent(new KeyboardEvent('keydown',{key:'n',metaKey:true}))") },
       { label: 'Buscar', accelerator: 'CommandOrControl+K', click: () => win?.webContents.executeJavaScript("window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',metaKey:true}))") },
@@ -216,9 +223,10 @@ app.whenReady().then(async () => {
     ] },
     { role: 'editMenu' },
     { role: 'viewMenu' },
-    { role: 'windowMenu' },
+    ...(process.platform === 'darwin' ? [{ role: 'windowMenu' }] : []),
   ]);
   Menu.setApplicationMenu(appMenu);
+  if (process.platform === 'win32') installWindowsLoopback();
 });
 
 ipcMain.on('notify', (_e, { title, body, id }) => {
@@ -228,8 +236,29 @@ ipcMain.on('notify', (_e, { title, body, id }) => {
 });
 
 app.on('activate', () => show());
+function installWindowsLoopback() {
+  // Chromium's WASAPI loopback (Windows 10 2004+). No share-screen picker: we pick the
+  // display in code and the renderer throws the video track away.
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
+    return ['media', 'display-capture', 'notifications', 'clipboard-read', 'clipboard-sanitized-write'].includes(permission);
+  });
+  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+      if (!sources[0]) { callback({}); return; }
+      callback({ video: sources[0], audio: 'loopback' });
+    } catch (err) {
+      console.error('loopback', err);
+      callback({});
+    }
+  });
+}
+
 app.on('before-quit', () => {
   quitting = true;
   globalShortcut.unregisterAll();
-  if (server) server.kill('SIGTERM');
+  if (server) {
+    if (process.platform === 'win32') server.kill();
+    else server.kill('SIGTERM');
+  }
 });

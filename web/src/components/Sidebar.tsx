@@ -34,7 +34,7 @@ export function Sidebar() {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [importing, setImporting] = useState(false);
-  const isDesktop = !!window.acta?.isDesktop;
+  const macFrame = window.acta?.platform === 'darwin';
 
   const createFolder = async () => {
     if (!name.trim()) return;
@@ -47,7 +47,7 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-hairline bg-sunken">
-      <div className={cx('drag flex items-center gap-2 px-4', isDesktop ? 'h-12 pl-[84px]' : 'h-14')}>
+      <div className={cx('drag flex items-center gap-2 px-4', macFrame ? 'h-12 pl-[84px]' : 'h-14')}>
         <div className="flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary font-display text-[14px] text-primary-ink">A</span>
           <span className="font-display text-[17px] text-ink">Acta</span>

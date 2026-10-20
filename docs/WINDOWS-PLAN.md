@@ -1,4 +1,8 @@
-# Windows — plan, sin implementar
+# Windows
+
+El instalador NSIS ya existe (`npm run package:win`, workflow `windows-setup.yml`). El audio del sistema es el loopback WASAPI de Chromium, dentro de Electron, para no pedir otro programa a quien instala. `native/win/acta-audio.exe` solo detecta reuniones. El calendario del Mac no se muestra fuera de macOS. Lo que sigue sin hacerse es la prueba real con Zoom, Teams y Meet, y un capturador WASAPI propio si ese loopback se queda mudo o mezcla el micrófono.
+
+# Plan original
 
 Acta en macOS depende de un binario Swift (`native/main.swift`) para cuatro cosas. El servidor, la base de datos, la interfaz y el OAuth de Google no dependen de Swift. Una versión de Windows reutiliza el payload de `scripts/build-payload.mjs` (JavaScript del servidor + `web/dist`) y el shell de Electron. Lo que hay que sustituir es el capturador.
 

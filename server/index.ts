@@ -465,10 +465,22 @@ app.delete('/api/google/accounts/:email', ah(async (req) => {
   bus.emit('event', { type: 'meetings.changed' });
   return { ok: true };
 }));
+function openLocal(target: string, reveal = false) {
+  if (process.platform === 'darwin') spawn('open', reveal ? ['-R', target] : [target]);
+  else if (process.platform === 'win32') spawn('explorer.exe', reveal ? [`/select,${target}`] : [target], { windowsHide: true });
+  else spawn('xdg-open', [target], { stdio: 'ignore' });
+}
+
+function openHttp(url: string) {
+  if (process.platform === 'darwin') spawn('open', [url]);
+  else if (process.platform === 'win32') spawn('cmd.exe', ['/d', '/s', '/c', 'start', '', url], { windowsHide: true });
+  else spawn('xdg-open', [url], { stdio: 'ignore' });
+}
+
 app.post('/api/open-url', ah((req) => {
   const url = String(req.body.url || '');
   if (!/^https:\/\/(accounts\.google\.com|console\.(cloud|developers)\.google\.com|myaccount\.google\.com)\//.test(url)) throw new Error('URL no permitida');
-  if (process.platform === 'darwin') spawn('open', [url]);
+  openHttp(url);
   return { ok: true };
 }));
 
@@ -483,15 +495,15 @@ app.get('/api/meetings/:id/export', ah((req, res) => {
 }));
 app.post('/api/meetings/:id/export-file', ah(async (req) => {
   const file = writeExport(req.params.id, req.body.format === 'html' ? 'html' : 'md', { transcript: !!req.body.transcript });
-  if (req.body.open && process.platform === 'darwin') spawn('open', [file]);
-  if (req.body.reveal && process.platform === 'darwin') spawn('open', ['-R', file]);
+  if (req.body.open) openLocal(file);
+  if (req.body.reveal) openLocal(file, true);
   return { file };
 }));
 app.post('/api/meetings/:id/send', ah(async (req) => sendTo(req.body.target, req.params.id)));
 app.post('/api/open-path', ah((req) => {
   const p = String(req.body.path || '');
   if (!p.startsWith(DATA_DIR)) throw new Error('Ruta no permitida');
-  if (process.platform === 'darwin') spawn('open', [p]);
+  openLocal(p);
   return { ok: true };
 }));
 
@@ -534,6 +546,7 @@ app.post('/api/helper/request', ah(async (req) => {
   return JSON.parse(stdout || '{}');
 }));
 app.post('/api/helper/open-privacy', ah((req) => {
+  if (process.platform !== 'darwin') return { ok: false };
   const pane = { screen: 'Privacy_ScreenCapture', mic: 'Privacy_Microphone', calendar: 'Privacy_Calendars', accessibility: 'Privacy_Accessibility' }[String(req.body.pane)] || 'Privacy';
   spawn('open', [`x-apple.systempreferences:com.apple.preference.security?${pane}`]);
   return { ok: true };

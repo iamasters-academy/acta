@@ -1,0 +1,30 @@
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  nsis:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Empaquetar instalador NSIS
+        env:
+          ACTA_GOOGLE_CLIENT_ID: ${{ secrets.ACTA_GOOGLE_CLIENT_ID }}
+          ACTA_GOOGLE_CLIENT_SECRET: ${{ secrets.ACTA_GOOGLE_CLIENT_SECRET }}
+          ACTA_GOOGLE_REDIRECT_URI: ${{ secrets.ACTA_GOOGLE_REDIRECT_URI }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npm run package:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acta-windows
+          path: dist/win/*.exe
+          if-no-files-found: error

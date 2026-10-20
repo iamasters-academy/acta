@@ -28,6 +28,34 @@ async function pipe(stream: MediaStream, channel: 0 | 1) {
   src.connect(node);
 }
 
+export async function startWindowsCapture(opts: { echoCancellation?: boolean } = {}) {
+  connectEvents();
+  ctx = new AudioContext();
+  if (ctx.state === 'suspended') await ctx.resume();
+  const url = URL.createObjectURL(new Blob([WORKLET], { type: 'application/javascript' }));
+  await ctx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+  const mic = await navigator.mediaDevices.getUserMedia({
+    audio: { echoCancellation: opts.echoCancellation !== false, noiseSuppression: true },
+  });
+  streams.push(mic);
+  await pipe(mic, 0);
+  try {
+    const disp = await navigator.mediaDevices.getDisplayMedia({ video: { width: 1, height: 1, frameRate: 1 }, audio: true });
+    const audio = disp.getAudioTracks();
+    if (!audio.length) {
+      disp.getTracks().forEach((t) => t.stop());
+      return { system: false };
+    }
+    streams.push(disp);
+    await pipe(new MediaStream(audio), 1);
+    for (const t of disp.getVideoTracks()) t.stop();
+    return { system: true };
+  } catch {
+    return { system: false };
+  }
+}
+
 export async function startBrowserCapture(opts: { tabAudio?: boolean } = {}) {
   connectEvents();
   ctx = new AudioContext();

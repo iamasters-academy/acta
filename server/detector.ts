@@ -28,8 +28,9 @@ function notifyOnce(key: string, cooldownMs: number, event: any) {
 }
 
 export function startDetector() {
-  if (child || process.platform !== 'darwin' || !fs.existsSync(HELPER_BIN)) return;
-  child = spawn(HELPER_BIN, ['detect', '--interval', '2'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const supported = process.platform === 'darwin' || process.platform === 'win32';
+  if (child || !supported || !fs.existsSync(HELPER_BIN)) return;
+  child = spawn(HELPER_BIN, ['detect', '--interval', '2'], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   detectorState.running = true;
   let buf = '';
   child.stdout!.on('data', (d) => {
@@ -61,7 +62,9 @@ function onReading(r: { micInUse: boolean; meetings: DetectorState['meetings']; 
     meetingGoneSince = 0;
     if (!getSetting('autoDetect', true)) return;
     const m = detectorState.meetings[0];
-    if (m && r.micInUse) {
+    // On Windows a recognized call window is enough. WASAPI sometimes hides the mic session.
+    const heard = process.platform === 'win32' ? true : r.micInUse;
+    if (m && heard) {
       notifyOnce(`app:${m.bundleId}:${m.title}`, 20 * 60_000, { type: 'meeting.detected', app: m.app, title: m.title, bundleId: m.bundleId });
     }
     return;

@@ -1,0 +1,27 @@
+appId: app.acta.meetings
+productName: Acta
+executableName: Acta
+copyright: Copyright Acta contributors
+npmRebuild: false
+asar: false
+directories:
+  output: dist/win
+  app: dist/payload
+files:
+  - "**/*"
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: Acta-${version}-x64-Setup.exe
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Acta
+  uninstallDisplayName: Acta
+  deleteAppDataOnUninstall: false

@@ -39,6 +39,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 fs.writeFileSync(path.join(payload, 'package.json'), JSON.stringify({
   name: 'acta',
   productName: 'Acta',
+  author: 'Acta contributors',
   version: pkg.version,
   private: true,
   description: pkg.description,

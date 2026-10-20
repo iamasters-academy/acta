@@ -156,13 +156,19 @@ export function Home() {
         <div className="mb-8 rounded-2xl border border-hairline bg-raised px-5 py-4">
           <div className="font-display text-[22px] leading-tight text-ink">Añade tu clave para empezar</div>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-2">
-            Acta vive en tu Mac y no trae claves de fábrica. Pega la de tu cuenta de Groq, OpenAI, Deepgram o Anthropic.
-            Se guarda solo en este ordenador.
+            Acta vive en este ordenador y no trae claves de fábrica. Pega la de tu cuenta de Groq, OpenAI, Deepgram o Anthropic.
+            Se guarda solo aquí.
           </p>
           <ul className="mt-3 space-y-1 text-[13px] text-ink-3">
             <li>Transcripción: Groq, OpenAI o Deepgram. {missingStt ? 'Todavía no hay ninguna.' : 'Lista.'}</li>
             <li>Notas y chat: Groq, OpenAI o Anthropic. {missingAi ? 'Todavía no hay ninguna.' : 'Lista.'}</li>
-            <li>La primera vez, macOS pedirá el micrófono y la grabación de pantalla (solo para oír la llamada, no para verte). El calendario es opcional.</li>
+            {state?.platform === 'win32' ? (
+              <li>La primera vez, Windows pedirá el micrófono. El audio de la llamada se toma del sistema, sin grabar la pantalla. El calendario es opcional.</li>
+            ) : state?.platform === 'darwin' ? (
+              <li>La primera vez, macOS pedirá el micrófono y la grabación de pantalla (solo para oír la llamada, no para verte). El calendario es opcional.</li>
+            ) : (
+              <li>El calendario es opcional.</li>
+            )}
           </ul>
           <Link to="/ajustes#claves" className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-ink">Ir a Ajustes <ArrowRight size={14} /></Link>
         </div>

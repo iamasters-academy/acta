@@ -19,7 +19,8 @@ export const DATA_DIR = process.env.ACTA_DATA_DIR || path.join(ROOT, 'data');
 export const AUDIO_DIR = path.join(DATA_DIR, 'audio');
 export const EXPORT_DIR = path.join(DATA_DIR, 'exports');
 export const IMPORT_DIR = path.join(DATA_DIR, 'imports');
-export const HELPER_BIN = process.env.ACTA_HELPER || path.join(ROOT, 'bin', 'acta-audio');
+const helperFile = process.platform === 'win32' ? 'acta-audio.exe' : 'acta-audio';
+export const HELPER_BIN = process.env.ACTA_HELPER || path.join(ROOT, 'bin', helperFile);
 export const PORT = Number(process.env.ACTA_PORT || (PACKAGED ? 47331 : 4848));
 
 for (const dir of [DATA_DIR, AUDIO_DIR, EXPORT_DIR, IMPORT_DIR]) fs.mkdirSync(dir, { recursive: true });

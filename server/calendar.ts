@@ -98,7 +98,7 @@ export async function upcomingEvents(opts: { fromMs?: number; toMs?: number } = 
   }));
   events.push(...(await googleEvents(from, to)));
   Object.assign(lastErrors, googleErrors());
-  if (getSetting('macCalendarEnabled', false)) events.push(...(await macEvents(from, to)));
+  if (process.platform === 'darwin' && getSetting('macCalendarEnabled', false)) events.push(...(await macEvents(from, to)));
   const seen = new Set<string>();
   return events
     .filter((e) => !e.allDay && e.end >= from.getTime())
@@ -107,7 +107,7 @@ export async function upcomingEvents(opts: { fromMs?: number; toMs?: number } = 
 }
 
 async function macEvents(from: Date, to: Date): Promise<CalEvent[]> {
-  if (!fs.existsSync(HELPER_BIN)) return [];
+  if (process.platform !== 'darwin' || !fs.existsSync(HELPER_BIN)) return [];
   if (macCache && Date.now() - macCache.at < 2 * 60_000) return macCache.events.filter((e) => e.start < to.getTime() && e.end > from.getTime());
   try {
     const { stdout } = await execFileP(HELPER_BIN, ['events', '--from', String(from.getTime()), '--to', String(to.getTime())], { timeout: 15000 });

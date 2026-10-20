@@ -1,6 +1,6 @@
 // Native notifications: Electron bridge when available, the Web Notification API otherwise.
 declare global {
-  interface Window { acta?: { notify: (title: string, body: string, id: string) => void; onNotificationClick: (cb: (id: string) => void) => void; isDesktop: boolean } }
+  interface Window { acta?: { notify: (title: string, body: string, id: string) => void; onNotificationClick: (cb: (id: string) => void) => void; isDesktop: boolean; platform?: string } }
 }
 
 const handlers = new Map<string, () => void>();

@@ -1,0 +1,16 @@
+node_modules/
+data/
+dist/
+web/dist/
+bin/
+.cache/
+uploads/
+build/icon.icns
+build/*.iconset
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+*.dmg
+*.zip

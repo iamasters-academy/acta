@@ -1,0 +1,128 @@
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshCw, LogOut, Plus } from 'lucide-react';
+import { api, onEvent } from '../api';
+import { Button, Toggle, cx, toast } from './ui';
+
+export type GoogleCal = { id: string; summary: string; primary: boolean; color: string; enabled: boolean };
+export type GoogleAccount = { email: string; name: string; picture: string; calendars: GoogleCal[] };
+
+export function GoogleLogo({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  );
+}
+
+/** Opens Google's sign-in: a popup in the browser, the default browser from the desktop app. */
+export async function connectGoogle(loginHint?: string) {
+  try {
+    const { url } = await api.post<{ url: string }>('/api/google/connect', { loginHint });
+    const w = 520;
+    const h = 680;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top = window.screenY + (window.outerHeight - h) / 2;
+    const popup = window.open(url, 'acta-google', `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+    if (!popup && !window.acta?.isDesktop) await api.post('/api/open-url', { url });
+    toast('Inicia sesión con Google en la ventana que se ha abierto.');
+  } catch (e: any) {
+    toast(e.message, { tone: 'error' });
+  }
+}
+
+export function GoogleButton({ label = 'Conectar con Google', variant = 'outline', loginHint }: { label?: string; variant?: 'outline' | 'primary'; loginHint?: string }) {
+  return (
+    <button
+      onClick={() => void connectGoogle(loginHint)}
+      className={cx(
+        'inline-flex h-9 items-center gap-2.5 rounded-lg px-3.5 text-[13px] font-medium transition-colors',
+        variant === 'primary' ? 'bg-primary text-primary-ink hover:opacity-90' : 'border border-hairline-strong bg-raised text-ink hover:bg-soft',
+      )}
+    >
+      <span className={cx('flex h-5 w-5 items-center justify-center rounded-full', variant === 'primary' && 'bg-white')}><GoogleLogo size={14} /></span>
+      {label}
+    </button>
+  );
+}
+
+export function useGoogleAccounts() {
+  const [data, setData] = useState<{ configured: boolean; accounts: GoogleAccount[]; errors: Record<string, string> } | null>(null);
+  const load = useCallback(() => api.get<any>('/api/google/accounts').then(setData).catch(() => {}), []);
+  useEffect(() => {
+    void load();
+    return onEvent((e) => { if (e.type === 'google.connected' || e.type === 'google.error') void load(); });
+  }, [load]);
+  return { data, reload: load };
+}
+
+export function GoogleAccounts() {
+  const { data, reload } = useGoogleAccounts();
+  const [busy, setBusy] = useState('');
+  if (!data) return null;
+
+  const toggle = async (a: GoogleAccount, id: string, on: boolean) => {
+    const ids = a.calendars.filter((c) => (c.id === id ? on : c.enabled)).map((c) => c.id);
+    await api.put(`/api/google/accounts/${encodeURIComponent(a.email)}/calendars`, { ids });
+    void reload();
+  };
+  const refresh = async (email: string) => {
+    setBusy(email);
+    const r = await api.post<any>(`/api/google/accounts/${encodeURIComponent(email)}/refresh`);
+    setBusy('');
+    if (r.error) toast(r.error, { tone: 'error', action: r.activationUrl ? { label: 'Activar la API', onClick: () => void api.post('/api/open-url', { url: r.activationUrl }) } : undefined });
+    void reload();
+  };
+  const disconnect = async (email: string) => {
+    if (!confirm(`¿Desconectar ${email}? Acta dejará de ver sus calendarios (tus notas no se tocan).`)) return;
+    await api.del(`/api/google/accounts/${encodeURIComponent(email)}`);
+    void reload();
+  };
+
+  if (!data.configured) {
+    return <div className="px-5 py-4 text-[12.5px] text-ink-3">Esta copia de Acta no incluye «Conectar con Google». Usa una dirección iCal o el Calendario del Mac, más abajo.</div>;
+  }
+
+  return (
+    <div className="px-5 py-4">
+      {!data.accounts.length ? (
+        <div className="flex items-center gap-4">
+          <div className="flex-1 text-[12.5px] text-ink-3">Inicia sesión con tu cuenta de Google y elige qué calendarios ver. Sin copiar enlaces ni compartir nada: solo lectura.</div>
+          <GoogleButton variant="primary" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data.accounts.map((a) => (
+            <div key={a.email} className="rounded-xl border border-hairline">
+              <div className="flex items-center gap-3 border-b border-hairline px-3.5 py-2.5">
+                {a.picture ? <img src={a.picture} alt="" referrerPolicy="no-referrer" className="h-7 w-7 rounded-full" /> : <GoogleLogo size={20} />}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] text-ink">{a.name}</div>
+                  <div className="truncate text-[12px] text-ink-4">{a.email}</div>
+                </div>
+                <button title="Actualizar calendarios" onClick={() => void refresh(a.email)} className="rounded-md p-1.5 text-ink-4 hover:bg-soft hover:text-ink">
+                  <RefreshCw size={14} className={busy === a.email ? 'animate-spin' : ''} />
+                </button>
+                <button title="Desconectar" onClick={() => void disconnect(a.email)} className="rounded-md p-1.5 text-ink-4 hover:bg-soft hover:text-danger"><LogOut size={14} /></button>
+              </div>
+              {data.errors[a.email] && <div className="border-b border-hairline px-3.5 py-2 text-[12px] text-danger">{data.errors[a.email]}</div>}
+              <div className="divide-y divide-hairline">
+                {a.calendars.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3 px-3.5 py-2">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} />
+                    <span className="flex-1 truncate text-[13px] text-ink-2">{c.summary}{c.primary && <span className="ml-2 text-[11.5px] text-ink-4">principal</span>}</span>
+                    <Toggle checked={c.enabled} onChange={(v) => void toggle(a, c.id, v)} label={c.summary} />
+                  </div>
+                ))}
+                {!a.calendars.length && <div className="px-3.5 py-2 text-[12.5px] text-ink-4">Sin calendarios. Pulsa ↻ para cargarlos.</div>}
+              </div>
+            </div>
+          ))}
+          <Button variant="ghost" onClick={() => void connectGoogle()}><Plus size={14} />Añadir otra cuenta de Google</Button>
+        </div>
+      )}
+    </div>
+  );
+}

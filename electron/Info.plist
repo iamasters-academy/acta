@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key><string>Acta transcribe tu micrófono durante las reuniones.</string>
+  <key>NSAudioCaptureUsageDescription</key><string>Acta transcribe el audio de tus llamadas.</string>
+  <key>NSScreenCaptureUsageDescription</key><string>Acta usa la captura de pantalla solo para obtener el audio del sistema durante tus reuniones.</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>Acta lee tu calendario para mostrar tus próximas reuniones.</string>
+  <key>NSCalendarsUsageDescription</key><string>Acta lee tu calendario para mostrar tus próximas reuniones.</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
+</dict>
+</plist>

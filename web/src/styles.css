@@ -1,0 +1,190 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/ibm-plex-serif/400.css";
+@import "@fontsource/ibm-plex-serif/500.css";
+@import "@fontsource/ibm-plex-serif/400-italic.css";
+
+/* Warm paper palette: off-white canvas, near-black ink, olive accent. */
+:root {
+  --canvas: #fcfcf8;
+  --sunken: #f2f2ec;
+  --raised: #ffffff;
+  --elevated: #ffffff;
+  --ink: #292929;
+  --ink-2: #4e4d4b;
+  --ink-3: #72726e;
+  --ink-4: #acada8;
+  --hairline: #47432a24;
+  --hairline-strong: #47432a3d;
+  --soft: #625a220f;
+  --soft-hover: #56512e1f;
+  --accent: #5b6f00;
+  --accent-hover: #4c5616;
+  --accent-ink: #788c15;
+  --accent-tint: #e5eacd;
+  --accent-wash: #f2f6e1;
+  --danger: #bd4a30;
+  --warning: #fed468;
+  --blue-wash: #eaf4fe;
+  --purple-wash: #f3f0fa;
+  --primary: #292929;
+  --primary-ink: #fcfcf8;
+  --on-accent: #ffffff;
+  --shadow: 0 1px 2px #29292910, 0 8px 24px -8px #29292922;
+  --shadow-pop: 0 2px 6px #29292914, 0 18px 48px -12px #2929293a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #1d1d1c;
+    --sunken: #171716;
+    --raised: #262625;
+    --elevated: #2e2e2d;
+    --ink: #fcfcf8;
+    --ink-2: #d5d5d2;
+    --ink-3: #9e9e99;
+    --ink-4: #72726e;
+    --hairline: #ffffff17;
+    --hairline-strong: #ffffff2b;
+    --soft: #ffffff0d;
+    --soft-hover: #ffffff1c;
+    --accent: #b2c248;
+    --accent-hover: #c3d25d;
+    --accent-ink: #b2c248;
+    --accent-tint: #434625;
+    --accent-wash: #2b2c21;
+    --danger: #ec7558;
+    --blue-wash: #232836;
+    --purple-wash: #2a2733;
+    --primary: #eaebe5;
+    --primary-ink: #1d1d1c;
+    --on-accent: #1d1d1c;
+    --shadow: 0 1px 2px #0006, 0 8px 24px -8px #0008;
+    --shadow-pop: 0 2px 6px #0007, 0 18px 48px -12px #000a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #1d1d1c; --sunken: #171716; --raised: #262625; --elevated: #2e2e2d;
+  --ink: #fcfcf8; --ink-2: #d5d5d2; --ink-3: #9e9e99; --ink-4: #72726e;
+  --hairline: #ffffff17; --hairline-strong: #ffffff2b; --soft: #ffffff0d; --soft-hover: #ffffff1c;
+  --accent: #b2c248; --accent-hover: #c3d25d; --accent-ink: #b2c248; --accent-tint: #434625; --accent-wash: #2b2c21;
+  --danger: #ec7558; --blue-wash: #232836; --purple-wash: #2a2733; --primary: #eaebe5; --primary-ink: #1d1d1c; --on-accent: #1d1d1c;
+  --shadow: 0 1px 2px #0006, 0 8px 24px -8px #0008; --shadow-pop: 0 2px 6px #0007, 0 18px 48px -12px #000a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "IBM Plex Serif", ui-serif, Georgia, serif;
+  --color-canvas: var(--canvas);
+  --color-sunken: var(--sunken);
+  --color-raised: var(--raised);
+  --color-elevated: var(--elevated);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-soft: var(--soft);
+  --color-soft-hover: var(--soft-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-tint: var(--accent-tint);
+  --color-accent-wash: var(--accent-wash);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-blue-wash: var(--blue-wash);
+  --color-purple-wash: var(--purple-wash);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-on-accent: var(--on-accent);
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-pop);
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+::selection { background: var(--accent-tint); }
+* { scrollbar-width: thin; scrollbar-color: var(--hairline-strong) transparent; }
+
+/* Electron: draggable title area */
+.drag { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
+
+/* ---------- Note editor (TipTap) ---------- */
+.note-editor .ProseMirror { outline: none; min-height: 40vh; font-size: 15px; line-height: 1.7; color: var(--ink); padding-bottom: 30vh; }
+.note-editor .ProseMirror p { margin: 0 0 4px; }
+.note-editor .ProseMirror h1, .note-editor .ProseMirror h2, .note-editor .ProseMirror h3 { font-weight: 600; color: var(--ink); margin: 22px 0 6px; }
+.note-editor .ProseMirror h1 { font-size: 20px; }
+.note-editor .ProseMirror h2 { font-size: 17px; }
+.note-editor .ProseMirror h3 { font-size: 15px; }
+.note-editor .ProseMirror ul, .note-editor .ProseMirror ol { padding-left: 22px; margin: 2px 0 8px; }
+.note-editor .ProseMirror ul { list-style: disc; }
+.note-editor .ProseMirror ol { list-style: decimal; }
+.note-editor .ProseMirror li { margin: 2px 0; }
+.note-editor .ProseMirror li::marker { color: var(--ink-4); }
+.note-editor .ProseMirror li > p { margin: 0; }
+.note-editor .ProseMirror strong { font-weight: 600; }
+.note-editor .ProseMirror blockquote { border-left: 2px solid var(--hairline-strong); padding-left: 12px; color: var(--ink-3); margin: 8px 0; }
+.note-editor .ProseMirror code { font-size: 13px; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+.note-editor .ProseMirror hr { border: 0; border-top: 1px solid var(--hairline); margin: 20px 0; }
+.note-editor .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 2px; }
+.note-editor .ProseMirror ul[data-type="taskList"] li { display: flex; gap: 8px; align-items: flex-start; }
+.note-editor .ProseMirror ul[data-type="taskList"] li > label { margin-top: 5px; }
+.note-editor .ProseMirror ul[data-type="taskList"] input { accent-color: var(--accent); }
+.note-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: var(--ink-4); float: left; height: 0; pointer-events: none;
+}
+/* Enhanced notes: AI text in grey, the user's own words in ink. */
+.note-editor.enhanced .ProseMirror { color: var(--ink-3); }
+.note-editor.enhanced .ProseMirror h1, .note-editor.enhanced .ProseMirror h2, .note-editor.enhanced .ProseMirror h3,
+.note-editor.enhanced .ProseMirror strong, .note-editor.enhanced .ProseMirror .u { color: var(--ink); }
+.note-editor.enhanced .ProseMirror li::marker { color: var(--ink-4); }
+
+/* ---------- Markdown (chat, brief) ---------- */
+.md { font-size: 14px; line-height: 1.65; color: var(--ink); }
+.md p { margin: 0 0 8px; }
+.md h1, .md h2, .md h3 { font-weight: 600; font-size: 14px; margin: 14px 0 4px; }
+.md ul, .md ol { padding-left: 20px; margin: 4px 0 8px; }
+.md ul { list-style: disc; }
+.md ol { list-style: decimal; }
+.md li { margin: 2px 0; }
+.md li::marker { color: var(--ink-4); }
+.md strong { font-weight: 600; }
+.md code { font-size: 12.5px; background: var(--soft); padding: 1px 4px; border-radius: 4px; }
+.md pre { background: var(--soft); padding: 10px 12px; border-radius: 8px; overflow-x: auto; }
+.md a.cite {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 12px; padding: 0 7px; border-radius: 99px;
+  background: var(--accent-wash); color: var(--accent-ink); text-decoration: none; white-space: nowrap; vertical-align: 1px;
+}
+.md a.cite:hover { background: var(--accent-tint); }
+.md .u { color: var(--ink); }
+.md.ai { color: var(--ink-3); }
+.md.ai h3, .md.ai strong { color: var(--ink); }
+
+/* ---------- motion ---------- */
+@keyframes bar { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.fade-up { animation: fadeUp 0.22s ease-out both; }
+.pulse-dot { animation: pulseDot 1.4s ease-in-out infinite; }
+.shimmer {
+  background: linear-gradient(90deg, var(--soft) 0%, var(--soft-hover) 50%, var(--soft) 100%);
+  background-size: 800px 100%; animation: shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .pulse-dot, .shimmer { animation: none; }
+}

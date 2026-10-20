@@ -1,0 +1,59 @@
+name: macOS DMG
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: Arquitectura
+        type: choice
+        default: universal
+        options:
+          - universal
+          - arm64
+          - x64
+  push:
+    tags: ['v*']
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Importar certificado Developer ID
+        if: ${{ secrets.CSC_LINK != '' }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          echo "$CSC_LINK" | base64 --decode > /tmp/acta-cert.p12
+          security create-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p actions build.keychain
+          security import /tmp/acta-cert.p12 -k build.keychain -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+          security list-keychains -d user -s build.keychain login.keychain
+          rm -f /tmp/acta-cert.p12
+      - run: npm ci
+      - name: Empaquetar DMG universal
+        env:
+          ACTA_ARCH: ${{ github.event_name == 'workflow_dispatch' && inputs.arch || 'universal' }}
+          ACTA_GOOGLE_CLIENT_ID: ${{ secrets.ACTA_GOOGLE_CLIENT_ID }}
+          ACTA_GOOGLE_CLIENT_SECRET: ${{ secrets.ACTA_GOOGLE_CLIENT_SECRET }}
+          ACTA_GOOGLE_REDIRECT_URI: ${{ secrets.ACTA_GOOGLE_REDIRECT_URI }}
+          ACTA_CODESIGN_IDENTITY: ${{ secrets.ACTA_CODESIGN_IDENTITY }}
+          ACTA_NOTARIZE: ${{ secrets.ACTA_NOTARIZE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run package:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acta-macos
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error

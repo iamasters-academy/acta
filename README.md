@@ -168,3 +168,7 @@ npm run smoke
 - Los permisos de micrófono, grabación de pantalla y calendario los pide macOS la primera vez. La grabación de pantalla solo se usa para el audio del sistema.
 - No hay app de iPhone ni carpetas compartidas: Acta es de una sola persona.
 - En Windows el audio del sistema depende del loopback de Chromium. No está probado aquí contra Zoom, Teams ni Meet; el criterio y lo que quedaría por hacer si falla están en [docs/WINDOWS-PLAN.md](docs/WINDOWS-PLAN.md).
+
+## Licencia
+
+PolyForm Shield 1.0.0 ([LICENSE.md](LICENSE.md)). En resumen: puedes usar Acta en tu trabajo, adaptarla y mejorarla; lo que no puedes es ofrecer con ella un producto o servicio que compita con Acta (venderla o revenderla). El texto legal es el que manda.

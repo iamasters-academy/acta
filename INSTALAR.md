@@ -61,9 +61,9 @@ Para grabar: abre una nota y empieza. Acta usa el micrófono y, si el permiso de
 
 ## Calendario
 
-- **Dirección iCal.** En Outlook u otro calendario, copia la dirección secreta del calendario (acaba en `.ics`) y pégala en Ajustes → Calendario.
+- **Dirección iCal** (lo más rápido, 1 minuto). En Google Calendar: ⚙️ → Configuración → tu calendario → «Dirección secreta en formato iCal». En Outlook u otro: la dirección secreta del calendario (acaba en `.ics`). Pégala en Ajustes → Calendario.
 - **Calendario del Mac.** El interruptor de Ajustes lee los calendarios de la app Calendario, incluidas las cuentas que ya tengas añadidas ahí.
-- **Conectar con Google** solo aparece si quien preparó esta copia de Acta configuró un acceso de Google. Si no ves el botón, usa una de las dos opciones de arriba. No es un fallo tuyo.
+- **Conectar con Google.** Inicias sesión con Google y eliges qué calendarios ver, con varias cuentas si quieres. La primera vez hay que crear un acceso de Google propio (gratis, unos 8 minutos, una sola vez) y cargar su archivo en **Ajustes → Calendario**. El paso a paso está en el botón **Cómo conseguirlo** de la app y en [docs/GOOGLE.md](docs/GOOGLE.md).
 
 ## Dónde están tus notas
 
@@ -129,8 +129,8 @@ Para grabar: abre una nota y empieza. Si solo se oye tu voz, el PC es anterior a
 
 ### Calendario
 
-- **Dirección iCal.** En Outlook u otro calendario, copia la dirección secreta del calendario (acaba en `.ics`) y pégala en Ajustes → Calendario.
-- **Conectar con Google** solo aparece si quien preparó esta copia de Acta configuró un acceso de Google. Si no ves el botón, usa la dirección iCal. No es un fallo tuyo.
+- **Dirección iCal** (lo más rápido, 1 minuto). En Google Calendar: ⚙️ → Configuración → tu calendario → «Dirección secreta en formato iCal». En Outlook u otro: la dirección secreta del calendario (acaba en `.ics`). Pégala en Ajustes → Calendario.
+- **Conectar con Google.** Igual que en el Mac: la primera vez creas tu acceso de Google (unos 8 minutos, una sola vez) y cargas su archivo en **Ajustes → Calendario**. El paso a paso está en el botón **Cómo conseguirlo** de la app y en [docs/GOOGLE.md](docs/GOOGLE.md).
 
 No hay un interruptor de «Calendario del Mac»: eso solo existe en la app del Mac.
 

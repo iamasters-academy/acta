@@ -60,5 +60,5 @@ fs.writeFileSync(path.join(payload, 'build-config.json'), JSON.stringify({
 }, null, 2) + '\n');
 
 if (id) console.log('Google OAuth: incluido en esta build.');
-else console.log('Google OAuth: desactivado. «Conectar con Google» no aparecerá.');
+else console.log('Google OAuth: sin cliente de serie. Cada persona carga el suyo en Ajustes → Calendario.');
 console.log(`Payload listo: ${payload}`);

@@ -29,26 +29,86 @@ export class GoogleError extends Error {
   }
 }
 
-function client() {
+type ClientSource = 'custom' | 'build' | 'env' | '';
+type GoogleClient = { id: string; secret: string; redirect: string; source: ClientSource };
+
+/**
+ * Where the OAuth client comes from, in order:
+ * 1. custom: the one the person loads in Settings (a "Desktop app" client from their own Google Cloud project).
+ *    Desktop clients take a loopback redirect without registering it.
+ * 2. build: one written into build-config.json when the app was packaged.
+ * 3. env: ACTA_GOOGLE_* in development only. Packaged builds never read .env.local.
+ */
+function client(): GoogleClient {
   const custom = getSetting<{ id?: string; secret?: string; redirect?: string }>('googleClient', {});
-  const baked = buildConfig.google || {};
-  // Packaged builds only see a client written into build-config.json at build time.
-  // They do not read .env.local, so a developer machine's client is not included by accident.
-  if (PACKAGED) {
-    const id = (custom.id || baked.clientId || '').trim();
-    const secret = (custom.secret || baked.clientSecret || '').trim();
-    const redirect = (custom.redirect || baked.redirectUri || `http://localhost:${PORT}/api/google/callback`).trim();
-    return { id, secret, redirect };
+  if (custom.id?.trim() && custom.secret?.trim()) {
+    return {
+      id: custom.id.trim(),
+      secret: custom.secret.trim(),
+      // Same shape Google's own installed-app libraries use: loopback IP, its own port, root path.
+      // Acta listens there only while signing in (ensureCallbackListener).
+      redirect: (custom.redirect || `http://127.0.0.1:${PORT + 1}/`).trim(),
+      source: 'custom',
+    };
   }
-  const id = custom.id || process.env.ACTA_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
-  const secret = custom.secret || process.env.ACTA_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
-  const redirect = custom.redirect || process.env.ACTA_GOOGLE_REDIRECT_URI || `http://localhost:${PORT}/api/google/callback`;
-  return { id, secret, redirect };
+  const baked = buildConfig.google || {};
+  if (PACKAGED || baked.clientId) {
+    const id = (baked.clientId || '').trim();
+    const secret = (baked.clientSecret || '').trim();
+    const redirect = (baked.redirectUri || `http://localhost:${PORT}/api/google/callback`).trim();
+    return { id, secret, redirect, source: id && secret ? 'build' : '' };
+  }
+  const id = process.env.ACTA_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+  const secret = process.env.ACTA_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
+  const redirect = process.env.ACTA_GOOGLE_REDIRECT_URI || `http://localhost:${PORT}/api/google/callback`;
+  return { id, secret, redirect, source: id && secret ? 'env' : '' };
+}
+
+/** What Settings shows about the client in use. Never returns the secret. */
+export function clientInfo() {
+  const c = client();
+  return { source: c.source, clientId: c.source === 'custom' ? c.id : '', redirect: c.redirect };
+}
+
+const CLIENT_ID_RE = /^[\w-]+\.apps\.googleusercontent\.com$/;
+
+/**
+ * Saves the person's own OAuth client. Accepts the fields or the JSON file Google downloads
+ * ({"installed": {...}} for Desktop clients, {"web": {...}} for web ones).
+ * Accounts connected with another client stop working (their tokens belong to it), so they are dropped.
+ */
+export function setCustomClient(input: { id?: string; secret?: string; json?: string }) {
+  let id = (input.id || '').trim();
+  let secret = (input.secret || '').trim();
+  let redirect = '';
+  if (input.json) {
+    let parsed: any;
+    try { parsed = JSON.parse(input.json); } catch { throw new GoogleError('Ese archivo no es el JSON que descarga Google Cloud.'); }
+    const c = parsed?.installed || parsed?.web || parsed;
+    id = String(c?.client_id || '').trim();
+    secret = String(c?.client_secret || '').trim();
+    if (parsed?.web) {
+      const uris: string[] = c.redirect_uris || [];
+      redirect = uris.find((u) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(u)) || '';
+      if (!redirect) throw new GoogleError('Ese cliente es de tipo «Aplicación web». Crea uno de tipo «App de escritorio» (la guía lo explica) y carga su archivo.');
+    }
+  }
+  if (!CLIENT_ID_RE.test(id)) throw new GoogleError('El ID de cliente debe acabar en .apps.googleusercontent.com.');
+  if (!secret) throw new GoogleError('Falta el secreto del cliente.');
+  const prev = getSetting<{ id?: string }>('googleClient', {});
+  if (prev.id && prev.id !== id) saveAccounts([]);
+  setSetting('googleClient', redirect ? { id, secret, redirect } : { id, secret });
+}
+
+export function clearCustomClient() {
+  const prev = getSetting<{ id?: string }>('googleClient', {});
+  if (prev.id) saveAccounts([]);
+  setSetting('googleClient', {});
 }
 
 export const googleConfigured = () => !!client().id && !!client().secret;
 export const accounts = () => getSetting<GoogleAccount[]>('googleAccounts', []);
-const saveAccounts = (a: GoogleAccount[]) => setSetting('googleAccounts', a);
+function saveAccounts(a: GoogleAccount[]) { setSetting('googleAccounts', a); }
 
 // ---------- authorization ----------
 type Pending = { verifier: string; createdAt: number };
@@ -61,9 +121,7 @@ const b64url = (b: Buffer) => b.toString('base64').replace(/\+/g, '-').replace(/
 export async function startAuth(loginHint?: string) {
   const c = client();
   if (!c.id || !c.secret) {
-    throw new GoogleError(PACKAGED
-      ? 'Esta copia de Acta no incluye el inicio de sesión con Google.'
-      : 'Falta el cliente OAuth de Google (ACTA_GOOGLE_CLIENT_ID y ACTA_GOOGLE_CLIENT_SECRET).');
+    throw new GoogleError('Antes de conectar, carga tu acceso de Google en Ajustes → Calendario (la guía está ahí mismo).');
   }
   const state = b64url(crypto.randomBytes(16));
   const verifier = b64url(crypto.randomBytes(48));

@@ -49,7 +49,11 @@ ACTA_ARCH=arm64 npm run package:mac
 
 ### Google Calendar
 
-`npm run package:mac` no lee `.env.local`. «Conectar con Google» queda oculto salvo que, al empaquetar, exportes un cliente OAuth pensado solo para Acta (scope de calendario de solo lectura). Crea un cliente nuevo para esta app; no reutilices uno de otro proyecto.
+Desde la 0.2.0, cada persona conecta su Google desde la propia app: carga en **Ajustes → Calendario** el archivo `.json` de un cliente OAuth «App de escritorio» que crea en su Google Cloud (gratis, unos 8 minutos, una sola vez). La guía paso a paso está en [docs/GOOGLE.md](docs/GOOGLE.md) y también dentro de la app («Cómo conseguirlo»). Así la build no lleva el cliente de nadie y no hay tope de usuarios.
+
+Con un cliente propio, Acta usa la redirección de bucle local `http://127.0.0.1:<puerto de la app + 1>/` (47332 en la app empaquetada) y solo abre ese puerto mientras dura el inicio de sesión. Los clientes de escritorio no necesitan registrarla.
+
+Opcional: meter un cliente de serie al empaquetar, para que nadie tenga que crear el suyo. `npm run package:mac` no lee `.env.local`; hay que exportarlo:
 
 ```bash
 export ACTA_GOOGLE_CLIENT_ID="….apps.googleusercontent.com"
@@ -60,9 +64,7 @@ export ACTA_GOOGLE_CLIENT_SECRET="…"
 npm run package:mac
 ```
 
-La redirección por defecto de la app empaquetada es `http://localhost:47331/api/google/callback` (el puerto fijo de la app). Hay que registrarla en Google Cloud. La URL iCal y el Calendario del Mac siguen disponibles aunque Google no esté incluido.
-
-El secreto del cliente queda dentro de la app: en un programa de escritorio no es secreto de verdad. Usa un cliente solo para Acta.
+Ten en cuenta que Google limita a 100 usuarios las apps no verificadas con permisos de calendario, y que el secreto queda dentro de la app (en un programa de escritorio no es secreto de verdad): usa un proyecto de Google Cloud solo para Acta. Si una persona carga su propio cliente en Ajustes, se usa el suyo. La URL iCal y el Calendario del Mac funcionan siempre.
 
 ### Firma y notarización (opcionales)
 
@@ -114,7 +116,13 @@ npm run package:win
 
 Salida: `dist/win/Acta-<versión>-x64-Setup.exe`.
 
-Las variables de Google son las mismas que en macOS, y este script tampoco lee `.env.local`. Sin ellas, «Conectar con Google» no aparece. Los datos quedan en `%APPDATA%\Acta`. El puerto de la app empaquetada sigue siendo 47331.
+Sin compilador de C++ a mano (por ejemplo, en un Mac sin MinGW), se puede reutilizar un `acta-audio.exe` ya compilado de una versión anterior, siempre que `native/win/acta-audio.cpp` no haya cambiado:
+
+```bash
+ACTA_WIN_HELPER=/ruta/a/acta-audio.exe npm run package:win
+```
+
+Las variables de Google son las mismas que en macOS, y este script tampoco lee `.env.local`. Sin ellas, cada persona carga su propio cliente en Ajustes (ver [docs/GOOGLE.md](docs/GOOGLE.md)). Los datos quedan en `%APPDATA%\Acta`. El puerto de la app empaquetada sigue siendo 47331.
 
 Sin certificado, SmartScreen avisa. El texto para quien instala está en [INSTALAR.md](INSTALAR.md). Para firmar con Authenticode, exporta `CSC_LINK` (el .pfx en base64) y `CSC_KEY_PASSWORD` antes de `npm run package:win`.
 
@@ -127,7 +135,7 @@ El workflow `.github/workflows/windows-setup.yml` hace lo mismo en `windows-late
 | Sin bot en la llamada | `bin/acta-audio` (Swift) graba el micrófono con AVAudioEngine y el audio del sistema con ScreenCaptureKit. |
 | Transcripción | Groq Whisper por defecto, OpenAI, Deepgram o whisper.cpp local. |
 | Detecta reuniones | En el Mac, el capturador Swift. En Windows, `acta-audio.exe` (ventanas y micrófono en uso). |
-| Calendario | Google OAuth si la build lo incluye; si no, URL iCal. En el Mac, también el Calendario. |
+| Calendario | «Conectar con Google» (cada persona carga su cliente de Google en Ajustes, o la build trae uno de serie), URL iCal y, en el Mac, el Calendario del sistema. |
 | Notas, plantillas, chat, tareas | En local. La IA solo entra cuando hay una clave en Ajustes. |
 | Escritorio | Ventana, icono en la barra de menús, notificaciones, `⌘⇧N`. |
 

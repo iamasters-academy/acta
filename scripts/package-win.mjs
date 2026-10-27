@@ -8,6 +8,7 @@
 //
 // On Linux this also needs MinGW (x86_64-w64-mingw32-g++) and 32-bit Wine
 // (the NSIS stub is 32-bit). On Windows it uses Visual Studio's C++ tools.
+// Without a C++ compiler: ACTA_WIN_HELPER=/path/to/acta-audio.exe npm run package:win
 // Output: dist/win/Acta-<version>-x64-Setup.exe
 //
 // Optional Authenticode signing (electron-builder reads these; omit both to ship unsigned):
@@ -43,7 +44,20 @@ console.log(`Acta ${version} · Electron ${electronVersion} · Windows x64`);
 run(process.execPath, ['scripts/build-payload.mjs']);
 
 const helperOut = path.join(root, 'dist', 'payload', 'bin', 'acta-audio.exe');
-run(process.execPath, ['scripts/build-win-helper.mjs', helperOut]);
+// ACTA_WIN_HELPER: an acta-audio.exe already built from native/win/acta-audio.cpp
+// (for example, taken from a previous release). Skips the C++ compiler.
+const prebuilt = process.env.ACTA_WIN_HELPER;
+if (prebuilt) {
+  if (!fs.existsSync(prebuilt)) {
+    console.error(`ACTA_WIN_HELPER apunta a un archivo que no existe: ${prebuilt}`);
+    process.exit(1);
+  }
+  fs.mkdirSync(path.dirname(helperOut), { recursive: true });
+  fs.copyFileSync(prebuilt, helperOut);
+  console.log(`Detector de Windows ya compilado: ${prebuilt}`);
+} else {
+  run(process.execPath, ['scripts/build-win-helper.mjs', helperOut]);
+}
 
 const env = { ...process.env };
 if (!env.CSC_LINK) env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';

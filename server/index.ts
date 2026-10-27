@@ -19,7 +19,7 @@ import { detectorState, startDetector, startCalendarWatcher } from './detector.t
 import { enhanceMeeting, extractActionItems, chat, brief, identifySpeakers } from './ai.ts';
 import { providerAvailable } from './llm.ts';
 import { toHtml, toMarkdown, writeExport, sendTo } from './integrations.ts';
-import { accounts as googleAccounts, disconnect as googleDisconnect, googleConfigured, handleCallback as googleCallback, refreshCalendars, setCalendarsEnabled, startAuth as googleAuth, googleErrors } from './google.ts';
+import { accounts as googleAccounts, clearCustomClient, clientInfo as googleClientInfo, disconnect as googleDisconnect, googleConfigured, handleCallback as googleCallback, refreshCalendars, setCalendarsEnabled, setCustomClient, startAuth as googleAuth, googleErrors } from './google.ts';
 
 const execFileP = promisify(execFile);
 const DEV = process.argv.includes('--dev');
@@ -446,9 +446,22 @@ app.get('/api/google/callback', async (req, res) => {
 });
 app.get('/api/google/accounts', ah(() => ({
   configured: googleConfigured(),
+  client: googleClientInfo(),
   accounts: googleAccounts().map((a) => ({ email: a.email, name: a.name, picture: a.picture, calendars: a.calendars, connectedAt: a.connectedAt })),
   errors: googleErrors(),
 })));
+app.put('/api/google/client', ah((req) => {
+  setCustomClient({ id: req.body?.id, secret: req.body?.secret, json: req.body?.json });
+  clearCalendarCache();
+  bus.emit('event', { type: 'meetings.changed' });
+  return { ok: true, client: googleClientInfo() };
+}));
+app.delete('/api/google/client', ah(() => {
+  clearCustomClient();
+  clearCalendarCache();
+  bus.emit('event', { type: 'meetings.changed' });
+  return { ok: true, configured: googleConfigured() };
+}));
 app.post('/api/google/accounts/:email/refresh', ah(async (req) => {
   try { return { calendars: await refreshCalendars(req.params.email) }; }
   catch (e: any) { return { error: e.message, activationUrl: e.activationUrl }; }

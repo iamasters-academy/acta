@@ -1,8 +1,36 @@
 # Acta — cuaderno de reuniones con IA, en local
 
-Acta es un cuaderno de reuniones al estilo Granola para usar en un Mac: transcribe la llamada sin meter un bot, y la IA completa las notas a partir de lo que escribes. El audio y el texto solo salen hacia el proveedor que cada persona configura (Groq, OpenAI, Deepgram o Anthropic).
+Acta escucha tus llamadas (Zoom, Meet, Teams…) sin meter un bot, las transcribe y convierte tus apuntes en notas completas con IA. Funciona en **Mac y Windows**. Todo se queda en tu ordenador: el audio y el texto solo salen hacia el proveedor de IA que tú elijas, con tu propia clave.
 
-Quien va a instalar la app (sin tocar código) tiene la guía en [INSTALAR.md](INSTALAR.md).
+## Instalar
+
+### Opción 1 — Que lo haga Claude (recomendada)
+
+Abre **Claude Code** (en Claude Desktop, la pestaña **Code**) y pega esto:
+
+```text
+Instálame Acta en este ordenador. Sigue paso a paso la guía
+https://raw.githubusercontent.com/iamasters-academy/acta/main/docs/INSTALAR-CON-CLAUDE.md
+Pregúntame lo que necesites y comprueba cada paso antes de seguir.
+```
+
+Claude descarga la versión de tu sistema, la instala, la abre y te acompaña con la clave de IA, los permisos y, si quieres, Google Calendar. Tú solo tendrás que pegar tu clave dentro de Acta y aceptar los permisos que pida el sistema.
+
+### Opción 2 — A mano (2 minutos)
+
+1. Descarga la última versión: **[github.com/iamasters-academy/acta/releases/latest](https://github.com/iamasters-academy/acta/releases/latest)**
+   - Mac (Apple Silicon e Intel): el archivo `.dmg`.
+   - Windows 10/11 de 64 bits: el archivo `-Setup.exe`.
+2. Instálala.
+   - Mac: abre el `.dmg` y arrastra Acta a Aplicaciones. La primera vez, clic derecho sobre Acta → **Abrir** → **Abrir**.
+   - Windows: abre el `.exe`. Si sale el aviso azul de SmartScreen: **Más información** → **Ejecutar de todas formas**.
+3. En Acta, **Ajustes → Claves**: pega una clave de [Groq](https://console.groq.com/keys) (tiene plan gratuito) y pulsa **Guardar**.
+
+Ya puedes grabar. El detalle de cada paso está en [INSTALAR.md](INSTALAR.md), y Google Calendar en [docs/GOOGLE.md](docs/GOOGLE.md).
+
+---
+
+*Lo que sigue es para quien quiera modificar Acta o compilarla.*
 
 ## Desarrollo
 
